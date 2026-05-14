@@ -6,7 +6,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 export default {
   async email(message, env, ctx) {
     const receivedAt = new Date().toISOString();
-    const subject = message.headers.get("subject") || "(no subject)";
+    const subject = decodeMimeHeader(message.headers.get("subject") || "(no subject)");
     const date = message.headers.get("date") || "";
     const messageId = message.headers.get("message-id") || crypto.randomUUID();
 
@@ -345,6 +345,51 @@ function decodeBase64Mime(input) {
   } catch {
     return String(input || "").trim();
   }
+}
+
+function decodeMimeHeader(input) {
+  const source = String(input || "");
+  if (!source.includes("=?")) return source;
+
+  return source.replace(/=\?([^?]+)\?([bBqQ])\?([^?]*)\?=/g, (_, charset, encoding, value) => {
+    try {
+      const bytes =
+        String(encoding).toUpperCase() === "B"
+          ? decodeBase64ToBytes(value)
+          : decodeQuotedPrintableHeaderToBytes(value);
+      return new TextDecoder(normalizeCharset(charset), { fatal: false }).decode(bytes);
+    } catch {
+      return _;
+    }
+  });
+}
+
+function decodeBase64ToBytes(input) {
+  const cleaned = String(input || "").replace(/\s+/g, "");
+  const binary = atob(cleaned);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function decodeQuotedPrintableHeaderToBytes(input) {
+  const normalized = String(input || "").replace(/_/g, " ");
+  const bytes = [];
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    if (normalized[index] === "=" && /[A-Fa-f0-9]{2}/.test(normalized.slice(index + 1, index + 3))) {
+      bytes.push(parseInt(normalized.slice(index + 1, index + 3), 16));
+      index += 2;
+    } else {
+      bytes.push(normalized.charCodeAt(index));
+    }
+  }
+
+  return new Uint8Array(bytes);
+}
+
+function normalizeCharset(charset) {
+  const normalized = String(charset || "utf-8").trim().toLowerCase();
+  if (normalized === "utf8") return "utf-8";
+  return normalized;
 }
 
 function escapeRegExp(value) {
