@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cf-email-web",
+  "main": "src/index.js",
+  "compatibility_date": "2026-05-14",
+  "account_id": "aa3bf2b79b8bbdbf05b4e289bd7c4d91",
+  "workers_dev": true,
+  "vars": {
+    "STORAGE_BACKEND": "r2"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "MAIL_STORE"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MAIL_BUCKET"
+    }
+  ]
+}

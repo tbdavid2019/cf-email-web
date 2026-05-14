@@ -1,0 +1,4 @@
+ADMIN_PASSWORD=change-this-password
+SESSION_SECRET=change-this-long-random-secret
+FORWARD_TO=you@example.com,backup@example.com
+STORAGE_BACKEND=r2
